@@ -1,0 +1,175 @@
+import math
+
+# ----------------------------------------------------------------------
+# Generic Fixed-Point Iteration
+# ----------------------------------------------------------------------
+def fixed_point_iteration(g, x0, tol=1e-9, max_iter=500, verbose=False):
+    """
+    Iterates x_{n+1} = g(x_n) starting from x0 until
+    |x_{n+1} - x_n| < tol  (which guarantees the requested number of
+    correct decimal places once tol is chosen accordingly).
+
+    Returns (root, n_iterations, history)
+    """
+    history = [x0]
+    x_old = x0
+    for n in range(1, max_iter + 1):
+        x_new = g(x_old)
+        history.append(x_new)
+        if verbose:
+            print(f"    n={n:3d}   x = {x_new:.12f}")
+        if abs(x_new - x_old) < tol:
+            return x_new, n, history
+        x_old = x_new
+    raise RuntimeError("Fixed-Point Iteration did not converge "
+                        f"within {max_iter} iterations (last x={x_old})")
+
+
+def print_header(title):
+    print("\n" + "=" * 72)
+    print(title)
+    print("=" * 72)
+
+
+# ----------------------------------------------------------------------
+# PROBLEM 1
+# ----------------------------------------------------------------------
+print_header("PROBLEM 1  (FPI, accuracy: 8 decimal places, tol = 1e-9)")
+
+# (a) x^3 = 2x + 2   ->   x = (2x + 2)^(1/3)
+g1a = lambda x: (2*x + 2) ** (1/3)
+
+# (b) e^x + x = 7    ->   x = ln(7 - x)
+g1b = lambda x: math.log(7 - x)
+
+# (c) e^x + sin(x) = 4  ->  x = ln(4 - sin(x))
+g1c = lambda x: math.log(4 - math.sin(x))
+
+problems_1 = [
+    ("(a) x^3 = 2x + 2  ->  g(x) = (2x+2)^(1/3)", g1a, 1.5),
+    ("(b) e^x + x = 7   ->  g(x) = ln(7 - x)",     g1b, 1.0),
+    ("(c) e^x + sin x = 4  ->  g(x) = ln(4 - sin x)", g1c, 1.0),
+]
+
+for label, g, x0 in problems_1:
+    root, n, _ = fixed_point_iteration(g, x0, tol=1e-9)
+    print(f"{label}")
+    print(f"    initial guess x0 = {x0}")
+    print(f"    root = {root:.8f}   (steps needed = {n})\n")
+
+
+# ----------------------------------------------------------------------
+# PROBLEM 2
+# ----------------------------------------------------------------------
+print_header("PROBLEM 2  (FPI, accuracy: 8 decimal places, tol = 1e-9)")
+
+# (a) x^5 + x = 1   ->   x = (1 - x)^(1/5)
+g2a = lambda x: (1 - x) ** (1/5)
+
+# (b) sin x = 6x + 5   ->   x = (sin x - 5) / 6
+g2b = lambda x: (math.sin(x) - 5) / 6
+
+# (c) ln x + x^2 = 3   ->   x = sqrt(3 - ln x)
+g2c = lambda x: math.sqrt(3 - math.log(x))
+
+problems_2 = [
+    ("(a) x^5 + x = 1   ->  g(x) = (1-x)^(1/5)", g2a, 0.5),
+    ("(b) sin x = 6x + 5  ->  g(x) = (sin x - 5)/6", g2b, -1.0),
+    ("(c) ln x + x^2 = 3  ->  g(x) = sqrt(3 - ln x)", g2c, 1.5),
+]
+
+for label, g, x0 in problems_2:
+    root, n, _ = fixed_point_iteration(g, x0, tol=1e-9)
+    print(f"{label}")
+    print(f"    initial guess x0 = {x0}")
+    print(f"    root = {root:.8f}   (steps needed = {n})\n")
+
+
+# ----------------------------------------------------------------------
+# PROBLEM 3
+# ----------------------------------------------------------------------
+print_header("PROBLEM 3  (Square roots by FPI, 8 decimal places)")
+
+def sqrt_fpi(A, x0):
+    g = lambda x: (x + A / x) / 2
+    root, n, _ = fixed_point_iteration(g, x0, tol=1e-9)
+    return root, n
+
+for A, x0 in [(3, 1.0), (5, 2.0)]:
+    root, n = sqrt_fpi(A, x0)
+    print(f"sqrt({A}):  g(x) = (x + {A}/x)/2")
+    print(f"    initial guess x0 = {x0}")
+    print(f"    result = {root:.8f}   (steps needed = {n})")
+    print(f"    check (math.sqrt) = {math.sqrt(A):.8f}\n")
+
+
+# ----------------------------------------------------------------------
+# PROBLEM 4
+# ----------------------------------------------------------------------
+print_header("PROBLEM 4  (Cube roots by FPI, 8 decimal places)")
+
+def cbrt_fpi(A, x0):
+    g = lambda x: (2*x + A / x**2) / 3
+    root, n, _ = fixed_point_iteration(g, x0, tol=1e-9)
+    return root, n
+
+for A, x0 in [(2, 1.0), (3, 1.0), (5, 1.5)]:
+    root, n = cbrt_fpi(A, x0)
+    print(f"cube root of {A}:  g(x) = (2x + {A}/x^2)/3")
+    print(f"    initial guess x0 = {x0}")
+    print(f"    result = {root:.8f}   (steps needed = {n})")
+    print(f"    check (A^(1/3))  = {A ** (1/3):.8f}\n")
+
+
+# ----------------------------------------------------------------------
+# PROBLEM 5
+# ----------------------------------------------------------------------
+print_header("PROBLEM 5  (g(x)=cos x  vs  g(x)=cos^2 x), 6 decimal places")
+
+g5_cos = lambda x: math.cos(x)
+g5_cos2 = lambda x: math.cos(x) ** 2
+
+root_cos, n_cos, _ = fixed_point_iteration(g5_cos, 1.0, tol=1e-7)
+print(f"g(x) = cos x  (reference, Example 1.3)")
+print(f"    initial guess x0 = 1.0")
+print(f"    fixed point = {root_cos:.6f}   (steps needed = {n_cos})")
+
+root_cos2, n_cos2, _ = fixed_point_iteration(g5_cos2, 1.0, tol=1e-7)
+print(f"\ng(x) = cos^2 x")
+print(f"    initial guess x0 = 1.0")
+print(f"    fixed point = {root_cos2:.6f}   (steps needed = {n_cos2})")
+
+# Local convergence check via Theorem 1.6:  |g'(x*)| < 1  =>  locally convergent
+gprime_cos_at_root  = -math.sin(root_cos)
+gprime_cos2_at_root = -math.sin(2 * root_cos2)   # d/dx[cos^2 x] = -sin(2x)
+
+print("\nLocal convergence check (Theorem 1.6: convergent if |g'(x*)| < 1):")
+print(f"    g(x)=cos x   : g'(x*) = -sin(x*)      = {gprime_cos_at_root:.6f}  "
+      f"-> |g'(x*)| = {abs(gprime_cos_at_root):.6f}  "
+      f"({'CONVERGENT' if abs(gprime_cos_at_root) < 1 else 'NOT convergent'})")
+print(f"    g(x)=cos^2 x : g'(x*) = -sin(2x*)     = {gprime_cos2_at_root:.6f}  "
+      f"-> |g'(x*)| = {abs(gprime_cos2_at_root):.6f}  "
+      f"({'CONVERGENT' if abs(gprime_cos2_at_root) < 1 else 'NOT convergent'})")
+
+discussion = f"""
+Discussion:
+  Theorem 1.6 states that if g is continuously differentiable near a fixed
+  point x-star and |g'(x-star)| < 1, then the Fixed-Point Iteration
+  x_(n+1) = g(x_n) converges locally to x-star (for x0 close enough to
+  x-star); the smaller |g'(x-star)| is, the faster the (linear) convergence.
+
+  For g(x) = cos x, the fixed point is x* = 0.739085 and |g'(x*)|=|sin(x*)|
+  = 0.674, which is < 1, so the iteration is convergent -- consistent with
+  Example 1.3.
+
+  For g(x) = cos^2 x, the fixed point is different (x* = {root_cos2:.6f}),
+  and its derivative magnitude |sin(2x*)| = {abs(gprime_cos2_at_root):.6f},
+  which is also < 1. So YES, the FPI is again locally convergent -- but
+  since |g'(x*)| here is much closer to 1 than in the cos x case, the
+  convergence is much SLOWER (linear rate close to 1), requiring far more
+  iterations ({n_cos2} steps here vs {n_cos} steps for cos x) to reach the
+  same accuracy.
+"""
+print(discussion)
+
+print("Done.")
