@@ -1,0 +1,177 @@
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+def bisection(f, a, b, tol=1e-6, max_iter=200):
+    """
+    Finds a root of f(x)=0 in [a,b] using the Bisection Method.
+    tol : desired absolute error in x (controls decimal-place accuracy)
+    Returns (root, iterations)
+    """
+    fa, fb = f(a), f(b)
+    if fa * fb > 0:
+        raise ValueError(f"f(a) and f(b) must have opposite signs. "
+                          f"f({a})={fa:.6g}, f({b})={fb:.6g}")
+
+    iterations = 0
+    while (b - a) / 2 > tol and iterations < max_iter:
+        c = (a + b) / 2
+        fc = f(c)
+        if fc == 0:
+            return c, iterations
+        elif fa * fc < 0:
+            b, fb = c, fc
+        else:
+            a, fa = c, fc
+        iterations += 1
+
+    root = (a + b) / 2
+    return root, iterations
+
+
+def scan_for_sign_changes(f, x_start, x_end, step=0.01):
+    """
+    Scans [x_start, x_end] in small steps and returns a list of
+    (a,b) sub-intervals where f changes sign (i.e. contain a root).
+    """
+    intervals = []
+    x_prev = x_start
+    f_prev = f(x_prev)
+    x = x_start + step
+    while x <= x_end + 1e-12:
+        try:
+            f_curr = f(x)
+        except (ValueError, OverflowError):
+            x_prev, f_prev = x, None
+            x += step
+            continue
+        if f_prev is not None and f_prev * f_curr < 0:
+            intervals.append((x_prev, x))
+        x_prev, f_prev = x, f_curr
+        x += step
+    return intervals
+
+
+def unit_length_interval(a, b):
+    """
+    Build an interval of length exactly 1 that is centered on the root
+    found in the tight bracket [a,b]. Centering (rather than snapping to
+    the nearest integers) keeps the interval from accidentally swallowing
+    a second, nearby root.
+    """
+    c = (a + b) / 2
+    lo = round(c - 0.5, 2)
+    hi = round(c + 0.5, 2)
+    return lo, hi
+
+
+def print_header(title):
+    print("\n" + "=" * 70)
+    print(title)
+    print("=" * 70)
+
+
+# ----------------------------------------------------------------------
+# PROBLEM 1: 
+# ----------------------------------------------------------------------
+print_header("PROBLEM 1  (accuracy: 6 decimal places, tol = 1e-6)")
+
+f1a = lambda x: x**3 - 9                     # (a) x^3 = 9
+f1b = lambda x: 3*x**3 + x**2 - x - 5        # (b) 3x^3 + x^2 = x + 5
+f1c = lambda x: math.cos(x)**2 + 6 - x       # (c) cos^2(x) + 6 = x
+
+problems_1 = [
+    ("(a) x^3 = 9",              f1a, 2.0, 3.0),
+    ("(b) 3x^3 + x^2 = x + 5",   f1b, 1.0, 1.5),
+    ("(c) cos^2(x) + 6 = x",     f1c, 6.0, 7.0),
+]
+
+for label, f, a, b in problems_1:
+    root, it = bisection(f, a, b, tol=1e-6)
+    print(f"{label:<28} interval=[{a},{b}]  root = {root:.6f}   "
+          f"(iterations={it}, f(root)={f(root):.2e})")
+
+
+# ----------------------------------------------------------------------
+# PROBLEM 2 
+# ----------------------------------------------------------------------
+print_header("PROBLEM 2  (accuracy: 8 decimal places, tol = 1e-8)")
+
+f2a = lambda x: x**5 + x - 1                 # (a) x^5 + x = 1
+f2b = lambda x: math.sin(x) - 6*x - 5        # (b) sin x = 6x + 5
+f2c = lambda x: math.log(x) + x**2 - 3       # (c) ln x + x^2 = 3
+
+problems_2 = [
+    ("(a) x^5 + x = 1",     f2a, 0.0, 1.0),
+    ("(b) sin x = 6x + 5",  f2b, -1.0, -0.9),
+    ("(c) ln x + x^2 = 3",  f2c, 1.5, 1.6),
+]
+
+for label, f, a, b in problems_2:
+    root, it = bisection(f, a, b, tol=1e-8)
+    print(f"{label:<20} interval=[{a},{b}]  root = {root:.8f}   "
+          f"(iterations={it}, f(root)={f(root):.2e})")
+
+
+# ----------------------------------------------------------------------
+# PROBLEM 3 : 
+# ----------------------------------------------------------------------
+print_header("PROBLEM 3  (locate all roots, accuracy: 6 decimal places)")
+
+f3a = lambda x: 2*x**3 - 6*x - 1                       # (a)
+f3b = lambda x: math.exp(x - 2) + x**3 - x             # (b)
+f3c = lambda x: 1 + 5*x - 6*x**3 - math.exp(2*x)       # (c)
+
+problems_3 = [
+    ("(a) 2x^3 - 6x - 1 = 0",        f3a, -5, 5),
+    ("(b) e^(x-2) + x^3 - x = 0",    f3b, -5, 5),
+    ("(c) 1 + 5x - 6x^3 - e^(2x) = 0", f3c, -5, 5),
+]
+
+for label, f, xs, xe in problems_3:
+    print(f"\n--- {label} ---")
+
+    raw_intervals = scan_for_sign_changes(f, xs, xe, step=0.01)
+    print(f"Sign-change brackets found by scanning [{xs},{xe}]: {raw_intervals}")
+
+    unit_intervals = []
+    for (a, b) in raw_intervals:
+        u = unit_length_interval(a, b)
+        if u not in unit_intervals:
+            unit_intervals.append(u)
+
+    print(f"Unit-length intervals containing a root: {unit_intervals}")
+
+    for (a, b) in unit_intervals:
+        try:
+            root, it = bisection(f, a, b, tol=1e-6)
+            print(f"    root in [{a},{b}]  ->  x = {root:.6f}  "
+                  f"(iterations={it}, f(root)={f(root):.2e})")
+        except ValueError as e:
+            print(f"    [{a},{b}] skipped: {e}")
+
+    xx = np.linspace(xs, xe, 800)
+    yy = []
+    for xv in xx:
+        try:
+            yy.append(f(xv))
+        except (ValueError, OverflowError):
+            yy.append(np.nan)
+
+    plt.figure(figsize=(7, 4.5))
+    plt.axhline(0, color='black', linewidth=0.8)
+    plt.plot(xx, yy, label=label)
+    for (a, b) in unit_intervals:
+        plt.axvspan(a, b, color='orange', alpha=0.2)
+    plt.title(f"Problem 3 {label}")
+    plt.xlabel("x")
+    plt.ylabel("f(x)")
+    plt.ylim(-20, 20)
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend()
+    fname = "/mnt/user-data/outputs/problem3_" + label[1] + ".png"
+    plt.savefig(fname, dpi=120, bbox_inches='tight')
+    plt.close()
+    print(f"    Plot saved to: {fname}")
+
+print("\nDone.")
